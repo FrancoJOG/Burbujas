@@ -1,0 +1,262 @@
+{% extends 'burbujas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Mapa Interactivo de Compras por Estado</h2>
+    <div id="map" style="height: 600px;"></div>
+</div>
+
+<!-- Modal para mostrar la gráfica -->
+<div class="modal fade" id="estadoModal" tabindex="-1" aria-labelledby="estadoModalLabel" aria-hidden="true" style="z-index: 1051;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Compras en <span id="estadoNombre"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="estadoChart" width="100%" height="50"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Instrucciones -->
+<div class="modal fade" id="instruccionesModal" tabindex="-1" aria-labelledby="instruccionesModalLabel" aria-hidden="true" style="z-index: 1052;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Instrucciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Haz clic en los estados del mapa para visualizar sus gastos por año en licitaciones.</p>
+                <p><strong>Nota:</strong> Los datos y gráficas están por actualizar y refinar.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Incluir CSS personalizado para el diseño moderno -->
+<style>
+    body {
+        background-color: #1e1e2f;  /* Fondo oscuro */
+        color: #fff;  /* Texto blanco */
+    }
+
+    h2 {
+        color: #ff4f81;  /* Título con color vibrante */
+        text-shadow: 2px 2px 5px rgba(0,0,0,0.5);  /* Efecto de sombra */
+    }
+
+    #map {
+        height: 600px;
+        border-radius: 10px;  /* Bordes redondeados */
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);  /* Sombra para el mapa */
+    }
+
+    .modal-content {
+        background-color: #333;  /* Fondo oscuro para el modal */
+        color: #fff;  /* Texto blanco */
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #ff4f81;  /* Borde vibrante */
+    }
+
+    .btn-close {
+        color: #fff;  /* Botón de cierre blanco */
+    }
+
+    /* Forzar que los modales estén por encima del contenido */
+    .modal {
+        z-index: 1050;  /* Asegura que los modales siempre estén por encima de otros elementos */
+    }
+</style>
+
+<!-- Incluir Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+<!-- Incluir Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+<!-- Incluir Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modificar el z-index del menú después de que todo ha cargado
+    document.querySelector('header').style.zIndex = '1';
+
+    // Mostrar el modal de instrucciones automáticamente al cargar la página
+    var instruccionesModal = new bootstrap.Modal(document.getElementById('instruccionesModal'), {
+        backdrop: 'static',  // No permitir cerrar haciendo clic fuera
+        keyboard: false      // No permitir cerrar con la tecla Esc
+    });
+    instruccionesModal.show();
+
+    // Datos pasados desde la vista
+    var dataPorEstado = {{ data|safe }};
+    console.log("Datos pasados desde Django:", dataPorEstado);
+
+    // Inicializar el mapa
+    var map = L.map('map', {
+        center: [23.6345, -102.5528],  // Coordenadas centrales de México
+        zoom: 5,
+        scrollWheelZoom: false,   // Deshabilitar zoom con la rueda del ratón
+        doubleClickZoom: false,   // Deshabilitar zoom con doble clic
+        dragging: false,          // Deshabilitar el arrastre del mapa
+        zoomControl: false        // Deshabilitar el control de zoom
+    });
+
+    // Añadir capa de mapa base oscuro de CartoDB
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CartoDB</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Variable para almacenar el geojsonLayer
+    var geojsonLayer;
+
+    // Función para obtener el color según si el estado tiene datos o no
+    function getColor(estadoNombre) {
+        return dataPorEstado[estadoNombre] ? '#ff4f81' : '#3388ff';  // Colores vibrantes
+    }
+
+    // Función para aplicar estilo a cada feature
+    function style(feature) {
+        var estadoNombre = feature.properties.nombre || feature.properties.name || feature.properties.NOMBRE;
+        return {
+            fillColor: getColor(estadoNombre),
+            weight: 1,
+            opacity: 1,
+            color: 'white',  // Borde blanco
+            dashArray: '3',
+            fillOpacity: 0.7
+        };
+    }
+
+    // Funciones para resaltar el estado al pasar el mouse
+    function highlightFeature(e) {
+        var layer = e.target;
+
+        layer.setStyle({
+            weight: 3,
+            color: '#fff',
+            dashArray: '',
+            fillOpacity: 0.9
+        });
+
+        layer.bringToFront();
+    }
+
+    function resetHighlight(e) {
+        geojsonLayer.resetStyle(e.target);
+    }
+
+    // Función al interactuar con cada estado
+    function onEachFeature(feature, layer) {
+        var estadoNombre = feature.properties.nombre || feature.properties.name || feature.properties.NOMBRE;
+        console.log("Estado del GeoJSON:", estadoNombre);
+
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+            click: function(e) {
+                mostrarModal(estadoNombre);
+            }
+        });
+    }
+
+    // Cargar el GeoJSON de México y agregarlo al mapa
+    fetch("{% static 'geojson/mexico_estados.geojson' %}")
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(geojsonData) {
+            console.log("GeoJSON cargado:", geojsonData);
+            geojsonLayer = L.geoJson(geojsonData, {
+                style: style,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+        })
+        .catch(function(error) {
+            console.error('Error al cargar el GeoJSON:', error);
+        });
+
+    // Función para mostrar el modal con la gráfica
+    function mostrarModal(estadoNombre) {
+        console.log("Estado seleccionado:", estadoNombre);
+
+        // Obtener los datos del estado
+        var datosEstado = dataPorEstado[estadoNombre] || [];
+        console.log("Datos del estado:", datosEstado);
+
+        if (!datosEstado.length) {
+            console.log("No hay datos para el estado seleccionado.");
+            alert("No hay datos disponibles para " + estadoNombre);
+            return;
+        }
+
+        // Ordenar los datos por año
+        datosEstado.sort(function(a, b) {
+            return a.year - b.year;
+        });
+
+        // Resto del código para crear la gráfica
+        var labels = datosEstado.map(function(item) { return item.year; });
+        var data = datosEstado.map(function(item) { return item.amount; });
+
+        // Verifica si existe un gráfico anterior y destrúyelo si es necesario
+        if (window.estadoChart && typeof window.estadoChart.destroy === 'function') {
+            window.estadoChart.destroy();
+        }
+
+        var ctx = document.getElementById('estadoChart').getContext('2d');
+        window.estadoChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Monto de Compras',
+                    data: data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',  // Colores más vibrantes
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Actualizar el título del modal
+        document.getElementById('estadoNombre').textContent = estadoNombre;
+
+        // Mostrar el modal
+        var modal = new bootstrap.Modal(document.getElementById('estadoModal'));
+        modal.show();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends 'burbujas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5 mb-5" style="max-width: 1700px !important;">
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Ícono de información -->
+    <div>
+      <button type="button" class="btn btn-info btn-sm rounded-circle" id="infoButton" 
+              data-bs-toggle="tooltip" data-bs-placement="bottom"
+              title="
+              Esta herramienta muestra la relación entre servidores públicos y empresas que participan en contrataciones públicas.
+                Mediante el análisis de diversos indicadores, se generan marcas que podrían sugerir actos de corrupción u otros problemas, 
+                tales como cohecho, desvío de recursos, conflicto de interés, soborno y uso indebido de información.
+                Estas marcas no constituyen acusaciones, sino señales que orientan la investigación.
+                Usa los filtros para refinar la búsqueda y descubrir patrones.">
+        <i class="fa fa-info-circle"></i>
+      </button>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <div class="input-group" style="width: 250px;">
+        <span class="input-group-text"><i class="fa fa-search"></i></span>
+        <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nombre o RFC">
+      </div>
+
+      <!-- Filtros de posibles hechos de corrupción -->
+      <!-- Cada uno es un botón tipo toggle, cuando se presione filtrará los datos -->
+      <div class="btn-group" role="group">
+        <input type="checkbox" class="btn-check" id="cohechoFilter" autocomplete="off">
+        <label class="btn btn-sm btn-outline-secondary" for="cohechoFilter">Cohecho</label>
+
+        <input type="checkbox" class="btn-check" id="desvioFilter" autocomplete="off">
+        <label class="btn btn-sm btn-outline-secondary" for="desvioFilter">Desvío</label>
+
+        <input type="checkbox" class="btn-check" id="conflictoFilter" autocomplete="off">
+        <label class="btn btn-sm btn-outline-secondary" for="conflictoFilter">Conflicto de interés</label>
+
+        <input type="checkbox" class="btn-check" id="sobornoFilter" autocomplete="off">
+        <label class="btn btn-sm btn-outline-secondary" for="sobornoFilter">Soborno</label>
+
+        <input type="checkbox" class="btn-check" id="usoInfoFilter" autocomplete="off">
+        <label class="btn btn-sm btn-outline-secondary" for="usoInfoFilter">Uso indebido de info</label>
+      </div>
+
+      <button id="clearFiltersBtn" type="button" class="btn btn-sm btn-secondary">
+        <i class="fa fa-trash me-1"></i> Limpiar filtros
+      </button>
+
+      <span id="totalEmpresas" class="ms-2" style="font-weight:bold; color:#94638d;"></span>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div class="row justify-content-center" id="loadingSpinner" style="display: none;">
+    <div class="col-auto">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje Sin Datos -->
+  <div id="noDataMessage" style="display:none; text-align:center; color:#777;">
+    <i class="fa fa-exclamation-triangle fa-3x mb-3"></i>
+    <h4>No se encontraron datos</h4>
+    <p class="text-muted">Intenta ajustar la búsqueda o los filtros.</p>
+  </div>
+
+  <div class="row mt-4">
+    <!-- Tabla explicativa lateral -->
+    <div class="col-md-3 mb-3">
+      <div class="card shadow-sm" style="background-color:#f2f0f2; border-radius:10px;">
+        <div class="card-body">
+          <h6 style="color:#94638d;">Posibles Faltas Administrativas</h6>
+          <table class="table table-sm" style="font-size:0.9rem;">
+            <tbody>
+              <tr>
+                <td>Cohecho 
+                  <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                        title="Marcamos 'Cohecho' si, por ejemplo, el método de contratación fue directo o limitado con poca competencia, lo que podría sugerir un posible soborno o acuerdo indebido. Estas heurísticas son provisionales y buscan detectar patrones inusuales, no constituyen una acusación.">
+                    <i class="fa fa-info-circle text-muted"></i>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Desvío de recursos 
+                  <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                        title="Marcamos 'Desvío' si el monto total de contratos excede cierto umbral, sugiriendo posible asignación irregular de recursos públicos. Esta señal es indicativa, no definitiva.">
+                    <i class="fa fa-info-circle text-muted"></i>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Conflicto de interés 
+                  <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                        title="Marcamos 'Conflicto de interés' si detectamos más de una relación estrecha con servidores públicos, sugiriendo posible favoritismo o colusión.">
+                    <i class="fa fa-info-circle text-muted"></i>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Soborno 
+                  <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                        title="Marcamos 'Soborno' cuando la competencia es mínima y aún así se otorgan múltiples contratos a la misma empresa, lo cual podría ser signo de arreglo indebido.">
+                    <i class="fa fa-info-circle text-muted"></i>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Uso indebido de información 
+                  <span class="ms-1" data-bs-toggle="tooltip" data-bs-placement="right"
+                        title="Marcamos 'Uso indebido de información' cuando el método de contratación es 'selectivo' y la empresa parece tener ventajas injustificadas.">
+                    <i class="fa fa-info-circle text-muted"></i>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor del gráfico -->
+    <div class="col-md-9 text-center" style="position: relative;">
+      <div id="chart" style="height:550px; display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Información en el icono (i) como popover (más descriptivo) -->
+
+
+<!-- Scripts -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3plus@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+<script src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" crossorigin="anonymous"></script>
+
+<script>
+  var data = {{ data|safe }};
+
+  // Inicializar tooltips
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+  });
+
+  // Popover para el botón de información
+  document.addEventListener('DOMContentLoaded', function () {
+    var infoButton = document.getElementById('infoButton');
+    var infoPopover = new bootstrap.Popover(infoButton, {
+      content: document.getElementById('infoPopoverContent').innerHTML,
+      html: true,
+      trigger: 'hover',
+      placement: 'right'
+    });
+  });
+
+  var searchInput = document.getElementById("searchInput");
+  var debouncedApplyFilters = _.debounce(applyFilters, 300);
+  searchInput.addEventListener('input', debouncedApplyFilters);
+
+  // Filtros checkbox
+  document.getElementById('cohechoFilter').addEventListener('change', debouncedApplyFilters);
+  document.getElementById('desvioFilter').addEventListener('change', debouncedApplyFilters);
+  document.getElementById('conflictoFilter').addEventListener('change', debouncedApplyFilters);
+  document.getElementById('sobornoFilter').addEventListener('change', debouncedApplyFilters);
+  document.getElementById('usoInfoFilter').addEventListener('change', debouncedApplyFilters);
+
+  var clearFiltersBtn = document.getElementById('clearFiltersBtn');
+  clearFiltersBtn.addEventListener('click', function(){
+    searchInput.value = '';
+    document.getElementById('cohechoFilter').checked = false;
+    document.getElementById('desvioFilter').checked = false;
+    document.getElementById('conflictoFilter').checked = false;
+    document.getElementById('sobornoFilter').checked = false;
+    document.getElementById('usoInfoFilter').checked = false;
+    applyFilters();
+  });
+
+  function transformData(emp) {
+    return emp.map(function(d){
+      return {
+        id: d.rfcEmpresa,
+        name: d.nombreEmpresa,
+        value: d.count,
+        cohecho: d.cohecho,
+        desvio: d.desvio,
+        conflictoInteres: d.conflictoInteres,
+        soborno: d.soborno,
+        usoIndebidoInfo: d.usoIndebidoInfo
+      };
+    });
+  }
+
+  var chartData = transformData(data.empresas);
+  var visualization;
+
+  function renderChart(filteredData) {
+    // Limpiar contenedor
+    d3.select("#chart").selectAll("*").remove();
+
+    var chartContainer = document.getElementById('chart');
+
+    if (!filteredData || filteredData.length === 0) {
+      document.getElementById('noDataMessage').style.display = 'block';
+      chartContainer.style.display = 'none';
+      return;
+    } else {
+      document.getElementById('noDataMessage').style.display = 'none';
+      chartContainer.style.display = 'block';
+    }
+
+    var pastelColors = ["#B3E5FC", "#B2DFDB", "#C8E6C9", "#FFECB3", "#FFE0B2", "#D1C4E9", "#F8BBD0", "#F0F4C3"];
+
+    visualization = new d3plus.Pack()
+      .data(filteredData)
+      .groupBy("name")
+      .sum("value")
+      .select("#chart")
+      .height(600)
+      .colorScale("value")
+      .colorScaleConfig({
+        color: pastelColors,
+        scale: "linear"
+      })
+      .tooltipConfig({
+        background: "white",
+        fontSize: "12px",
+        padding: "12px",
+        title: function(d) {
+          return "<div style='font-weight:bold;color:#94638d;'>" + d.name + "</div>";
+        },
+        tbody: function(d) {
+          var rows = [];
+          rows.push(["<strong>RFC:</strong>", d.id]);
+          rows.push(["<strong>Cantidad de Registros:</strong>", d.value]);
+
+          var patrones = [];
+          if(d.cohecho) patrones.push("Cohecho");
+          if(d.desvio) patrones.push("Desvío de recursos");
+          if(d.conflictoInteres) patrones.push("Conflicto de interés");
+          if(d.soborno) patrones.push("Soborno");
+          if(d.usoIndebidoInfo) patrones.push("Uso indebido de información");
+          if(patrones.length > 0){
+            rows.push(["<strong>Patrones detectados:</strong>", patrones.join(", ")]);
+          }
+
+          return rows;
+        }
+      })
+      .render();
+  }
+
+  function applyFilters() {
+    document.getElementById('loadingSpinner').style.display = 'flex';
+
+    setTimeout(function(){
+      var searchTerm = (searchInput.value || '').toLowerCase();
+
+      var cohechoFilter = document.getElementById('cohechoFilter').checked;
+      var desvioFilter = document.getElementById('desvioFilter').checked;
+      var conflictoFilter = document.getElementById('conflictoFilter').checked;
+      var sobornoFilter = document.getElementById('sobornoFilter').checked;
+      var usoInfoFilter = document.getElementById('usoInfoFilter').checked;
+
+      var filtered = data.empresas.filter(function(d){
+        var matchText = (d.nombreEmpresa.toLowerCase().includes(searchTerm) || d.rfcEmpresa.toLowerCase().includes(searchTerm));
+        // Filtros booleanos
+        // Si un filtro está activado, la empresa debe cumplirlo.
+        if (cohechoFilter && !d.cohecho) return false;
+        if (desvioFilter && !d.desvio) return false;
+        if (conflictoFilter && !d.conflictoInteres) return false;
+        if (sobornoFilter && !d.soborno) return false;
+        if (usoInfoFilter && !d.usoIndebidoInfo) return false;
+
+        return matchText;
+      });
+
+      var transformed = transformData(filtered);
+      renderChart(transformed);
+
+      document.getElementById('totalEmpresas').textContent = "Total de empresas: " + filtered.length;
+      document.getElementById('loadingSpinner').style.display = 'none';
+    },0);
+  }
+
+  // Render inicial
+  renderChart(chartData);
+  document.getElementById('totalEmpresas').textContent = "Total de empresas: " + data.total_empresas;
+</script>
+
+<style>
+.form-control:focus {
+  border-color: #94638d !important;
+  box-shadow: 0 0 0 0.2rem rgba(148,99,141,.25);
+}
+
+.btn-secondary {
+  background-color: #94638d;
+  border:none;
+}
+
+.btn-secondary:hover {
+  background-color: #7A5082;
+}
+
+.input-group-text {
+  background-color: #f2f0f2;
+  border-color: #94638d;
+  color:#94638d;
+}
+
+.btn-info {
+  background-color: #b2dfdb; 
+  border:none;
+  color:#2A3B4D;
+}
+
+.btn-info:hover {
+  background-color: #9ccbc7;
+}
+
+.table > :not(:first-child) {
+  border-top: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Plataforma Digital Nacional{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Custom Colors */
+        .bg-dark-blue {
+            background: linear-gradient(to right, #902480, #5663DB);
+        }
+
+        .bg-medium-blue {
+            background-color: #577A98;
+        }
+
+        .bg-light-blue {
+            background-color: #BAC4D2;
+        }
+
+        .text-white {
+            color: #FFFFFF;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        /* Main navigation styling */
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            z-index: 9999;  /* Asegura que el menú tenga un z-index alto */
+            position: relative; /* Necesario para que z-index funcione correctamente */
+        }
+
+        nav > ul > li {
+            position: relative;
+            display: inline-block;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: white;
+            padding: 10px 15px;
+            display: block;
+        }
+
+        nav a:hover {
+            background-color: #3DA9FC;
+            border-radius: 5px;
+        }
+
+        nav ul ul {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #2A3B4D;
+            min-width: 200px;
+            z-index: 10000; /* Hace que los submenús se sobrepongan a todo */
+        }
+
+        nav ul ul li {
+            width: 100%;
+        }
+
+        nav ul ul li a {
+            padding: 10px 20px;
+        }
+
+        nav ul li:hover > ul {
+            display: block;
+        }
+
+        /* Mobile navigation */
+        @media (max-width: 768px) {
+            nav ul {
+                display: none;
+                flex-direction: column;
+            }
+
+            nav ul.open {
+                display: flex;
+            }
+
+            nav > ul > li {
+                display: block;
+            }
+
+            nav ul ul {
+                position: relative;
+                top: 0;
+                left: 0;
+                background-color: #577A98;
+            }
+        }
+
+        /* Toggle button for mobile menu */
+        .menu-toggle {
+            display: none;
+            background-color: #3DA9FC;
+            color: white;
+            padding: 10px;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .menu-toggle:hover {
+            background-color: #2a8cd8;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+        }
+
+        /* Version Bar */
+        .version-bar {
+            background-color: #BAC4D2;
+            color: #2A3B4D;
+            text-align: left;
+            padding: 6px 15px;
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+        
+        /* Asegura que el menú se superponga a cualquier otro contenido */
+        header {
+            position: relative;
+            z-index: 9999;  /* Asegura que el menú siempre esté en primer plano */
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="bg-dark-blue text-white py-3">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h1 class="logo">PDN</h1>
+            <button class="menu-toggle">Menú</button>
+            <nav>
+                <ul>
+                    <li><a href=" {% url 'home' %}">Inicio</a></li>
+                    <li><a href="#">Servidores Públicos</a>
+                        <ul>
+                            <li><a href="{% url 'lista_servidores_publicos' %}">Lista de Servidores Públicos</a></li>
+                            
+                        </ul>
+                    </li>
+                    <li><a href="#">Empresas</a>
+                        <ul>
+                            <li><a href=" {% url 'empresas_chart' %} ">Listado de Empresas</a></li>
+                            
+                        </ul>
+                    </li>
+                    <li><a href="#">Visualizaciones</a>
+                        <ul>
+                            <li><a href=" {% url 'cruces_s1_s6' %} ">Gráficos Interactivos</a></li>
+                            <li><a href=" {% url 'mapa_mexico' %} ">Mapa de Conexiones</a></li>
+                            <li><a href=" {% url 'filtros_dinamicos' %} ">Filtros Dinámicos</a></li>
+                        </ul>
+                    </li>
+                    <li><a >Ayuda</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Version Bar -->
+    <div class="version-bar">
+        Versión 1.1
+    </div>
+
+    <!-- Content Block -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS for menu toggle -->
+    <script>
+        document.querySelector('.menu-toggle').addEventListener('click', function() {
+            const nav = document.querySelector('nav ul');
+            nav.classList.toggle('open');
+        });
+
+        // Efecto de hover para submenús en dispositivos táctiles
+        const menuItems = document.querySelectorAll('nav > ul > li');
+        menuItems.forEach(item => {
+            item.addEventListener('touchstart', function() {
+                this.querySelector('ul').classList.toggle('open');
+            });
+        });
+    </script>
+</body>
+</html>

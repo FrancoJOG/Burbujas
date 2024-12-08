@@ -1,0 +1,166 @@
+{% extends 'burbujas/base.html' %}
+{% load static %}
+
+{% block title %}Inicio - Plataforma Digital Nacional{% endblock %}
+
+{% block content %}
+<!-- New Modern Banner Section -->
+<section class="video-banner">
+    <video autoplay muted loop playsinline id="bgVideo">
+        <source src="{% static 'videos/banner.mp4' %}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <div class="overlay">
+        <h1 class="banner-title">Plataforma Digital Nacional</h1>
+        <p class="banner-subtitle">Una plataforma de inteligencia anticorrupción que facilita el acceso y análisis de datos públicos para identificar posibles casos de conflicto de interés.</p>
+        <div class="button-container">
+            <a href="{% url 'mapa_mexico' %}" class="btn btn-primary">Comienza tu Búsqueda</a>
+            <a href="https://www.plataformadigitalnacional.org/" class="btn btn-secondary">Aprende más sobre PDN</a>
+        </div>
+    </div>
+</section>
+
+<!-- Section with Cards for Key Features -->
+<section class="bg-light py-5">
+    <div class="container">
+        <div class="row text-center">
+            <!-- Card 1: Servidores Públicos -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Servidores Públicos</h5>
+                        <p class="card-text">Consulta información sobre servidores públicos, identifica potenciales conflictos de interés y realiza búsquedas personalizadas.</p>
+                        <a href="{% url 'lista_servidores_publicos' %}" class="btn btn-outline-primary">Ver más</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 2: Empresas -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Empresas</h5>
+                        <p class="card-text">Explora el listado de empresas participantes en contrataciones públicas y filtra según el sector o tipo de contrato.</p>
+                        <a href="{% url 'empresas_chart' %}" class="btn btn-outline-primary">Ver más</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3: Contratos -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Contratos</h5>
+                        <p class="card-text">Accede a los contratos más relevantes de servidores públicos y empresas, con herramientas de análisis avanzado.</p>
+                        <a href="#" class="btn btn-outline-primary">Ver más</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section with Vision and Mission -->
+<section class="bg-dark text-white py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <h3>Misión</h3>
+                <p class="lead">Nuestra misión es proporcionar una plataforma que facilite la transparencia en el gobierno y permita identificar potenciales actos de corrupción, mediante el análisis inteligente de datos públicos.</p>
+            </div>
+            <div class="col-md-6 mb-4">
+                <h3>Visión</h3>
+                <p class="lead">Ser una herramienta clave en la lucha contra la corrupción, utilizada por autoridades y ciudadanos para asegurar la transparencia en la gestión pública.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CSS for video banner and overlay -->
+<style>
+    /* Video banner covering 100% width but with controlled height */
+    .video-banner {
+        position: relative;
+        width: 100%;
+        height: 400px; /* Set the height of the banner */
+        overflow: hidden;
+    }
+
+    #bgVideo {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%; /* Full width */
+        height: auto; /* Maintain aspect ratio */
+        min-height: 100%; /* Ensure it fills the vertical space if necessary */
+        object-fit: cover; /* Ensures the video covers the entire area while maintaining aspect ratio */
+        transform: translate(-50%, -50%);
+        z-index: -1;
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.4); /* Semi-transparent black overlay */
+        color: white;
+    }
+
+    .banner-title {
+        font-size: 2.5em;
+        font-weight: bold;
+        text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);
+        margin-bottom: 0.5em;
+    }
+
+    .banner-subtitle {
+        font-size: 1.5em;
+        text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+        margin-bottom: 1em;
+    }
+
+    .button-container {
+        display: flex;
+        gap: 20px;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 10px 20px;
+        font-size: 18px;
+        border-radius: 5px;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+
+    .btn-secondary {
+        background-color: transparent;
+        color: white;
+        border: 2px solid white;
+    }
+
+    @media (max-width: 768px) {
+        .banner-title {
+            font-size: 2em;
+        }
+        .banner-subtitle {
+            font-size: 1.2em;
+        }
+        .btn-primary, .btn-secondary {
+            font-size: 16px;
+            padding: 8px 16px;
+        }
+    }
+</style>
+
+{% endblock %}

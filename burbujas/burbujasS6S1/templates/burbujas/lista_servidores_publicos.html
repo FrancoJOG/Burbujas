@@ -1,0 +1,217 @@
+{% extends 'burbujas/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Lista de Servidores Públicos con Participación en Licitaciones/Empresas</h1>
+    <h1>{{nombre}}</h1>
+    <!-- Formulario de Búsqueda -->
+    <form method="GET" class="mb-4" id="search-form" onsubmit="mostrarCargando()">
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre" value="{{ request.GET.nombre }}">
+            </div>
+            <div class="col-md-4">
+                <input type="text" name="empresa" class="form-control" placeholder="Empresa" value="{{ request.GET.empresa }}">
+            </div>
+            <div class="col-md-4">
+                <select name="estado" class="form-select">
+                    <option value="Todos" {% if estado_seleccionado == 'TODOS' %}selected{% endif %}>Todos</option>
+                    {% for estado in lista_estados %}
+                    <option value="{{ estado|upper }}" {% if estado|upper == estado_seleccionado %}selected{% endif %}>{{ estado }}</option>
+                    {% endfor %}
+                </select>
+            </div>            
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                <a href="{% url 'lista_servidores_publicos' %}" class="btn btn-secondary">Limpiar</a>
+            </div>
+        </div>
+    </form>
+    {% if datos_disponibles %}
+    <!-- Tabla de Servidores Públicos -->
+        <table class="table table-striped table-bordered table-responsive">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nombre Completo</th>
+                    <th>Empresa</th>
+                    <th>Participación</th>
+                    <th>Detalles de Participación</th>
+                </tr>
+            </thead>
+            <tbody>          
+                {% for servidor in page_obj %}
+                <tr>
+                    <td>{{ servidor.nombre }} {{ servidor.primerApellido }} {{ servidor.segundoApellido }}</td>
+                    <td>
+                        <ul>
+                            {% for item in servidor.participacion.participacion %}
+                            <li>{{ item.nombreEmpresaSociedadAsociacion }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td><!--
+                        <ul>
+                            {% for item in servidor.participacion.participacion %}
+                            <li>{{ item.porcentajeParticipacion }}%</li>
+                            {% endfor %}
+                        </ul>-->
+                        <ul class="list-unstyled">
+                            {% for item in servidor.participacion.participacion %}
+                            <li class="mb-3">
+                                <!--<strong>{{ item.nombreEmpresaSociedadAsociacion }}</strong>-->
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar" 
+                                         role="progressbar" 
+                                         style="width: {{ item.porcentajeParticipacion }}%;" 
+                                         aria-valuenow="{{ item.porcentajeParticipacion }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ item.porcentajeParticipacion }}%
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>                        
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#participacionModal{{ servidor.id }}_{{ forloop.counter }}">
+                            Ver Participaciones
+                        </button>
+
+                        <div class="modal fade" id="participacionModal{{ servidor.id }}_{{ forloop.counter }}" tabindex="-1" aria-labelledby="participacionModalLabel{{ servidor.id }}_{{ forloop.counter }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="participacionModalLabel{{ servidor.id }}_{{ forloop.counter }}">Detalles de Participaciones para {{ servidor.nombre }} {{ servidor.primerApellido }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <ul class="list-group mt-3">
+                                            {% for item in servidor.participacion.participacion %}                                        
+                                            <li class="list-group-item">
+                                                <p><strong>Entidad:</strong> {% if item.nombreEmpresaSociedadAsociacion %}{{ item.nombreEmpresaSociedadAsociacion }}{% else %}Información no presentada{% endif %}</p>
+                                                <p><strong>Tipo Participación:</strong> {% if item.tipoParticipacion and item.tipoParticipacion.valor %}{{ item.tipoParticipacion.valor }}{% else %}Información no presentada{% endif %} ({{ item.porcentajeParticipacion }}%)</p>
+                                                <p><strong>Remuneración:</strong> {% if item.recibeRemuneracion %}Sí{% else %}No{% endif %}</p>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>    
+    <!-- Paginación -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Primero</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Último &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% else %}
+        <!--Mostrar mensaje de no hay datos
+        <p>No hay datos que coincidan con los filtros aplicados. </p>-->
+        <div class="modal fade" id="noDataModal" tabindex="-1" aria-labelledby="noDataModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="noDataModalLabel">Sin resultados</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                No se encontraron datos que coincidan con los filtros aplicados.
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+</div>
+
+<br>
+
+<!-- Pantalla de Cargando -->
+<div id="loading-screen" style="display: none;">
+    <div class="spinner-border text-light" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+    <h3 class="text-light mt-2">Cargando...</h3>
+</div>
+
+<!-- Estilos para la pantalla de carga -->
+<style>
+    #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
+<!-- Asegúrate de incluir los scripts de Bootstrap correctamente -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Script para mostrar la pantalla de carga -->
+<script>
+    function mostrarCargando() {
+        document.getElementById('loading-screen').style.display = 'flex';
+        // Damos un pequeño retraso para que la pantalla de carga se muestre
+        setTimeout(function() {
+            document.getElementById('search-form').submit();
+        }, 200);
+    }
+</script>
+<!-- JavaScript para ajustar el z-index del menú -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modificar el z-index del menú después de que todo ha cargado
+        document.querySelector('header').style.zIndex = '1';
+    });
+</script>
+<!-- Script para mostrar el modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        {% if not datos_disponibles %}
+        var noDataModal = new bootstrap.Modal(document.getElementById('noDataModal'), {
+            keyboard: true
+        });
+        noDataModal.show();
+        {% endif %}
+    });
+</script>
+
+{% endblock %}
